@@ -37,10 +37,15 @@ app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localho
 app.MapControllers();
 try
 {
-    app.Run();
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<StoreContext>();
+    await context.Database.MigrateAsync();
+    await StoreContextSeed.SeedAsync(context);
 }
 catch (Exception ex)
 {
+    Console.WriteLine(ex);
     throw;
 }
-
+app.Run();
