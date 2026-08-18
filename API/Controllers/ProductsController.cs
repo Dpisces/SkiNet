@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using API.RequestHelper;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications;
@@ -13,17 +14,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
+ 
+    public class ProductsController(IGenericRepository<Product> repo) : BaseApiControllre
     {
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProdcuts(string? brand, string? type, string? sort)
+        public async Task<ActionResult<IEnumerable<Product>>> GetProdcuts([FromQuery] ProductSpecParams specParams)
         {
-            var spec = new ProductSpecification(brand, type,sort);
-            var products = await repo.ListAsync(spec);
+            var spec = new ProductSpecification(specParams);
 
-            return Ok(products);
+
+            return Ok(await CreatePageResult(repo,spec,specParams.PageIndex,specParams.PageSize));
         }
 
         [HttpGet("{id:int}")]
@@ -76,14 +76,19 @@ namespace API.Controllers
             return BadRequest("Problem deleting the product");
         }
 
+        [HttpGet("brands")]
         public async Task<ActionResult<IReadOnlyList<string>>> GetBrands()
         {
-            return (await repo.ListAllAsync()).Select(x=>x.Brand).Distinct().ToList();
-        }
+            var spec = new BrandListSpecification();
 
+            return Ok(await repo.ListAsync(spec));
+        }
+        [HttpGet("types")]
         public async Task<ActionResult<IReadOnlyList<string>>> GetTypes()
         {
-            return (await repo.ListAllAsync()).Select(x=>x.Type).Distinct().ToList();
+            var spec = new TypeListSpecification();
+
+            return Ok(await repo.ListAsync(spec));
         }
         
         private bool ProductExists(int id)

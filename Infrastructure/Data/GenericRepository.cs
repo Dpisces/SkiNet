@@ -15,6 +15,13 @@ namespace Infrastructure.Data
             context.Set<T>().Add(entity);
         }
 
+        public async Task<int> CountAsync(ISpecification<T> spec)
+        {
+            var query = context.Set<T>().AsQueryable();
+            query = spec.ApplyCriteria(query);
+            return await query.CountAsync();
+        }
+
         public bool Exists(int id)
         {
             return context.Set<T>().Any(x => x.Id == id);
@@ -30,12 +37,22 @@ namespace Infrastructure.Data
             return await ApplySpecification(spec).FirstOrDefaultAsync();
         }
 
+          public async Task<Tresult?> GetEntityWithSpec<Tresult>(ISpecification<T,Tresult> spec)
+        {
+            return await ApplySpecification(spec).FirstOrDefaultAsync();
+        }
+
         public async Task<IReadOnlyList<T>> ListAllAsync()
         {
             return await context.Set<T>().ToListAsync();
         }
 
         public async Task<IReadOnlyList<T>> ListAsync(ISpecification<T> spec)
+        {
+            return await ApplySpecification(spec).ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<Tresult>> ListAsync<Tresult>(ISpecification<T,Tresult> spec)
         {
             return await ApplySpecification(spec).ToListAsync();
         }
@@ -60,6 +77,11 @@ namespace Infrastructure.Data
         private IQueryable<T> ApplySpecification(ISpecification<T> spec)
         {
             return SpecificationEvaluator<T>.GetQuery(context.Set<T>().AsQueryable(), spec);
+        }
+
+        private IQueryable<Tresult> ApplySpecification<Tresult>(ISpecification<T,Tresult> spec)
+        {
+            return SpecificationEvaluator<T>.GetQuery<T,Tresult>(context.Set<T>().AsQueryable(), spec);
         }
     }
 }
